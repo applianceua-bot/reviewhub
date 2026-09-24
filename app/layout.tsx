@@ -1,13 +1,8 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Inter, Manrope } from 'next/font/google'
+import { Manrope } from 'next/font/google'
+import { RevealObserver } from '@/components/reveal-observer'
 import './globals.css'
-
-const inter = Inter({
-  subsets: ['latin', 'cyrillic'],
-  variable: '--font-inter',
-  display: 'swap',
-})
 
 const manrope = Manrope({
   subsets: ['latin', 'cyrillic'],
@@ -16,20 +11,23 @@ const manrope = Manrope({
 })
 
 export const metadata: Metadata = {
-  title: 'RatingRise — SERM-агентство: управление репутацией бренда, отзывы, рейтинг',
+  title: 'Управление репутацией бренда в интернете — SERM-агентство RatingRise',
   description:
-    'RatingRise — SERM-агентство по управлению онлайн-репутацией. Работаем с брендами из любой страны, оплата в USD. Вытесняем негатив из поисковой выдачи, работаем с отзывами на Trustpilot, G2 и других площадках, повышаем рейтинг бренда. Бесплатный аудит, прозрачные отчёты.',
+    'SERM-агентство RatingRise: вытесняем негатив из поиска Google, работаем с отзывами на Trustpilot, G2 и в App Store, поднимаем рейтинг бренда. Бесплатный аудит репутации.',
   generator: 'v0.app',
   keywords: [
+    'управление репутацией бренда',
+    'управление репутацией в интернете',
     'SERM',
     'SERM-агентство',
-    'управление репутацией бренда',
-    'online reputation management',
     'ORM',
+    'online reputation management',
     'управление отзывами',
+    'удаление негативных отзывов',
     'вытеснение негатива из поиска',
     'рейтинг на Trustpilot',
-    'международное SERM-агентство',
+    'отзывы на G2 и Capterra',
+    'репутация в crypto, iGaming, fintech, SaaS, affiliate и dating',
     'RatingRise',
   ],
   robots: {
@@ -37,24 +35,30 @@ export const metadata: Metadata = {
     follow: true,
   },
   openGraph: {
-    title: 'RatingRise — SERM-агентство по управлению репутацией бренда',
+    title: 'Управление репутацией бренда в интернете — RatingRise',
     description:
-      'Вытесняем негатив из поиска, повышаем рейтинг на Trustpilot, G2 и других площадках и возвращаем доверие к бренду. Работаем с любой страной, оплата в USD.',
+      'Вытесняем негатив из поиска, работаем с отзывами и поднимаем рейтинг на Trustpilot, G2, в Google и App Store. Работаем с компаниями из любой страны.',
     type: 'website',
     locale: 'ru_RU',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'RatingRise — SERM-агентство по управлению репутацией бренда',
+    title: 'Управление репутацией бренда в интернете — RatingRise',
     description:
-      'Вытесняем негатив из поиска, повышаем рейтинг на Trustpilot, G2 и других площадках и возвращаем доверие к бренду.',
+      'Вытесняем негатив из поиска, работаем с отзывами и поднимаем рейтинг на Trustpilot, G2, в Google и App Store.',
   },
 }
 
 export const viewport: Viewport = {
   colorScheme: 'dark',
-  themeColor: '#1c1a17',
+  themeColor: '#171414',
 }
+
+// Marks the page as JS-enabled before first paint so scroll-reveal content
+// starts hidden only when it can actually be revealed. If the observer never
+// mounts (script error), the class is dropped and everything shows.
+const revealBootstrap =
+  "document.documentElement.classList.add('js');setTimeout(function(){if(!window.__rrReveal)document.documentElement.classList.remove('js')},3000)"
 
 export default function RootLayout({
   children,
@@ -62,9 +66,13 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="ru" className={`${inter.variable} ${manrope.variable} bg-background`}>
+    <html lang="ru" className={`${manrope.variable} bg-background`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: revealBootstrap }} />
+      </head>
       <body className="font-sans antialiased">
         {children}
+        <RevealObserver />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

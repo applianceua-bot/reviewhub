@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Send, CheckCircle2, ArrowRight } from 'lucide-react'
 import { ActionLink, ActionButton } from '@/components/action'
 import { site } from '@/lib/site'
+import { revealDelay } from '@/lib/utils'
 
 export function LeadForm() {
   const [sent, setSent] = useState(false)
@@ -17,20 +18,20 @@ export function LeadForm() {
 
   return (
     <section id="lead" className="scroll-mt-20 border-y border-border bg-card/40">
-      <div className="mx-auto max-w-6xl px-5 py-20 md:py-28">
+      <div className="mx-auto max-w-6xl px-5 py-16 md:py-24">
         <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
-          <div>
+          <div data-reveal>
             <span className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-primary">
               <span className="h-px w-6 bg-primary" />
               Обсудим ваш проект
             </span>
-            <h2 className="mt-4 text-balance font-display text-3xl font-bold tracking-tight md:text-4xl">
-              Начните с бесплатного аудита репутации
+            <h2 className="mt-4 text-balance font-display text-3xl font-extrabold tracking-tight md:text-4xl">
+              Бесплатный аудит репутации бренда
             </h2>
             <p className="mt-4 text-pretty leading-relaxed text-muted-foreground">
-              Оставьте контакты — проанализируем поисковую выдачу и отзывы о вашем бренде, покажем
-              точки роста и предложим конкретный план действий. Без универсальных шаблонов и без
-              обязательств.
+              Оставьте контакты, и мы проверим, что видят клиенты, когда ищут вашу компанию:
+              поисковую выдачу, отзывы и рейтинг на площадках. Покажем, что мешает доверию к бренду,
+              и предложим конкретный план. Бесплатно и без обязательств.
             </p>
 
             <div className="mt-8 flex flex-col gap-3">
@@ -60,7 +61,11 @@ export function LeadForm() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border bg-background p-6 md:p-8">
+          <div
+            data-reveal
+            style={revealDelay(1, 120)}
+            className="rounded-2xl border border-border bg-background p-6 md:p-8"
+          >
             {sent ? (
               <div className="flex h-full flex-col items-center justify-center py-10 text-center">
                 <CheckCircle2 className="size-12 text-primary" />

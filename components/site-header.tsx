@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Menu, X, Send } from 'lucide-react'
+import { Menu, X, Send, LogIn } from 'lucide-react'
 import { ActionLink } from '@/components/action'
 import { Logo } from '@/components/logo'
 import { LanguageSwitcher } from '@/components/language-switcher'
@@ -32,6 +32,10 @@ export function SiteHeader() {
 
         <div className="hidden items-center gap-2 md:flex">
           <LanguageSwitcher />
+          <ActionLink href="/login" variant="ghost">
+            <LogIn className="size-4" />
+            Кабинет
+          </ActionLink>
           <ActionLink
             href={site.telegram}
             target="_blank"
@@ -70,6 +74,10 @@ export function SiteHeader() {
             ))}
             <div className="mt-2 flex flex-col gap-3">
               <LanguageSwitcher className="w-full" />
+              <ActionLink href="/login" variant="secondary">
+                <LogIn className="size-4" />
+                Личный кабинет
+              </ActionLink>
               <ActionLink
                 href={site.telegram}
                 target="_blank"

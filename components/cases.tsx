@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { ArrowRight, ChevronDown } from 'lucide-react'
 import { SectionHeading } from '@/components/section-heading'
 import { cases, caseFilters } from '@/lib/site'
+import { revealDelay } from '@/lib/utils'
 
 export function Cases() {
   const [filter, setFilter] = useState<(typeof caseFilters)[number]>('Все')
@@ -12,11 +13,11 @@ export function Cases() {
   const filtered = filter === 'Все' ? cases : cases.filter((c) => c.niche === filter)
 
   return (
-    <section id="cases" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-20 md:py-28">
+    <section id="cases" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-16 md:py-24">
       <SectionHeading
         eyebrow="Кейсы"
-        title="Что мы делаем с рейтингом бренда на практике"
-        description="Реальные результаты проектов за последние 18 месяцев по разным нишам и площадкам."
+        title="Кейсы по управлению репутацией"
+        description="Реальные результаты проектов за последние 18 месяцев: как менялись рейтинг, отзывы и поисковая выдача по названию бренда."
       />
 
       <div className="mt-8 flex flex-wrap gap-2">
@@ -38,11 +39,16 @@ export function Cases() {
       </div>
 
       <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {filtered.map((item) => {
+        {filtered.map((item, i) => {
           const key = `${item.niche}-${item.title}`
           const isOpen = openCase === key
           return (
-            <article key={key} className="flex flex-col rounded-2xl border border-border bg-card p-6">
+            <article
+              key={key}
+              data-reveal
+              style={revealDelay(i % 4)}
+              className="card-lift flex flex-col rounded-2xl border border-border bg-card p-6"
+            >
               <span className="inline-flex w-fit items-center rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-primary">
                 {item.niche}
               </span>
@@ -52,17 +58,17 @@ export function Cases() {
 
               <div className="mt-4 flex items-center gap-2.5">
                 <div className="rounded-lg border border-border bg-background px-3 py-2">
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Before</p>
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Было</p>
                   <p className="mt-0.5 text-sm font-bold text-foreground">{item.before}</p>
                 </div>
                 <ArrowRight className="size-4 shrink-0 text-primary" />
                 <div className="rounded-lg border border-primary/30 bg-primary/10 px-3 py-2">
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-primary">After</p>
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-primary">Стало</p>
                   <p className="mt-0.5 text-sm font-bold text-foreground">{item.after}</p>
                 </div>
               </div>
 
-              <p className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
+              <p className="mt-auto flex items-center justify-between pt-4 text-xs text-muted-foreground">
                 <span>{item.geo}</span>
                 <span>{item.duration}</span>
               </p>

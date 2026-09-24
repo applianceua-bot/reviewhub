@@ -11,7 +11,7 @@ export function SiteFooter() {
           <div className="max-w-xs">
             <Logo />
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              SERM-агентство по управлению репутацией бренда: работаем с брендами из любой страны, оплата в USD.
+              SERM-агентство по управлению репутацией бренда: работаем с брендами из любой страны.
             </p>
             <a
               href={site.telegram}

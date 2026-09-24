@@ -5,7 +5,7 @@ export function Logo({ className }: { className?: string }) {
     <span className={`flex items-center gap-2.5 ${className ?? ''}`}>
       <span
         aria-hidden="true"
-        className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground"
+        className="flex size-8 items-center justify-center rounded-md bg-brand text-brand-foreground"
       >
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path

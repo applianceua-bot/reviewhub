@@ -4,9 +4,9 @@ import { ArrowRight } from 'lucide-react'
 import { blogPosts, site } from '@/lib/site'
 
 export const metadata: Metadata = {
-  title: `Блог — ${site.name}`,
+  title: `Блог об управлении репутацией бренда — ${site.name}`,
   description:
-    'Статьи о SERM и управлении онлайн-репутацией бренда для международных компаний — простым языком, без воды.',
+    'Статьи о SERM, работе с отзывами и управлении репутацией бренда в интернете: практические советы простым языком, без воды.',
 }
 
 function formatDate(date: string) {
@@ -23,8 +23,8 @@ export default function BlogPage() {
           <span className="h-px w-6 bg-primary" />
           Блог
         </span>
-        <h1 className="mt-4 text-balance font-display text-4xl font-bold tracking-tight md:text-5xl">
-          Заметки об управлении репутацией
+        <h1 className="mt-4 text-balance font-display text-4xl font-extrabold tracking-tight md:text-5xl">
+          Блог об управлении репутацией бренда
         </h1>
         <p className="mt-4 text-pretty leading-relaxed text-muted-foreground">
           Разбираем SERM, работу с отзывами и репутационные стратегии для брендов из любой страны —

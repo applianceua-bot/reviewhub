@@ -13,7 +13,7 @@ export function Hero() {
         className="absolute left-1/2 top-[-10%] -z-0 h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]"
       />
 
-      <div className="relative mx-auto max-w-6xl px-5 pb-20 pt-16 md:pt-24">
+      <div className="relative mx-auto max-w-6xl px-5 pb-12 pt-16 md:pb-16 md:pt-24">
         <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-16">
           {/* copy */}
           <div className="text-center lg:text-left">
@@ -26,17 +26,17 @@ export function Hero() {
               Управляем онлайн-репутацией брендов с 2016 года
             </div>
 
-            <h1 className="text-balance font-display text-4xl font-bold leading-[1.05] tracking-tight md:text-6xl">
-              Поднимаем рейтинг
+            <h1 className="text-balance font-display text-4xl font-extrabold leading-[1.05] tracking-tight md:text-6xl">
+              Управление <span className="text-primary">репутацией</span>{' '}
               <br />
-              вашего <span className="text-primary">бренда</span> в поиске
+              бренда в интернете
             </h1>
 
             <p className="mx-auto mt-6 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground md:text-lg lg:mx-0">
-              {site.name} — SERM-агентство по управлению онлайн-репутацией. Вытесняем негатив из
-              поисковой выдачи, работаем с отзывами клиентов и растим рейтинг бренда на площадках,
-              где ваши покупатели принимают решение. Работаем с брендами из любой страны, оплата — в
-              долларах США.
+              {site.name} — SERM-агентство. Мы делаем так, чтобы по запросу с названием вашей
+              компании клиенты видели доверие, а не негатив: вытесняем плохие статьи из поиска,
+              работаем с отзывами и поднимаем рейтинг на Trustpilot, G2, в Google и App Store.
+              Работаем с компаниями из любой страны.
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row lg:justify-start">

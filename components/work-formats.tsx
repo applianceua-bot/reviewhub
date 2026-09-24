@@ -3,27 +3,26 @@
 import { useState } from 'react'
 import { Check, ChevronDown, X } from 'lucide-react'
 import { workFormats } from '@/lib/site'
+import { revealDelay } from '@/lib/utils'
 
 export function WorkFormats() {
   const [open, setOpen] = useState<string | null>(workFormats[1].id)
 
   return (
     <section className="border-y border-border bg-card/40">
-      <div className="mx-auto max-w-6xl px-5 py-20 md:py-28">
-        <div className="max-w-3xl">
+      <div className="mx-auto max-w-6xl px-5 py-16 md:py-24">
+        <div data-reveal className="max-w-3xl">
           <span className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-primary">
             <span className="h-px w-6 bg-primary" />
-            Как мы работаем
+            Форматы
           </span>
-          <h2 className="mt-4 text-balance font-display text-3xl font-bold tracking-tight md:text-4xl">
-            Форматы работы с RatingRise
+          <h2 className="mt-4 text-balance font-display text-3xl font-extrabold tracking-tight md:text-4xl">
+            Форматы работы и цены на SERM
           </h2>
           <p className="mt-4 text-pretty leading-relaxed text-muted-foreground">
-            Три формата сотрудничества — от точечных публикаций до полного сопровождения бренда.
-            Строим и развиваем репутацию в высококонкурентных нишах: формируем позитивный
-            информационный фон, увеличиваем число качественных упоминаний и повышаем доверие
-            аудитории. Работаем с брендами из любой страны — площадки и язык публикаций подбираем
-            под вашу аудиторию, оплата в USD.
+            Выберите формат под свою задачу: разовые публикации на нужных площадках, комплексная
+            работа с отзывами и упоминаниями или полное сопровождение репутации бренда под ключ.
+            Площадки и язык публикаций подбираем под вашу аудиторию.
           </p>
           <p className="mt-4 text-sm text-muted-foreground">
             Нужна поштучная цена?{' '}
@@ -39,11 +38,13 @@ export function WorkFormats() {
         </div>
 
         <div className="mt-12 flex flex-col gap-5">
-          {workFormats.map((format) => {
+          {workFormats.map((format, i) => {
             const isOpen = open === format.id
             return (
               <div
                 key={format.id}
+                data-reveal
+                style={revealDelay(i, 90)}
                 className={`overflow-hidden rounded-2xl border transition-colors ${
                   isOpen ? 'border-primary/50 bg-card' : 'border-border bg-card/60'
                 }`}
@@ -161,7 +162,7 @@ export function WorkFormats() {
 
                       <a
                         href="#lead"
-                        className="mt-8 inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                        className="mt-8 inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-brand px-5 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand/90"
                       >
                         {format.cta}
                         <span aria-hidden="true">→</span>

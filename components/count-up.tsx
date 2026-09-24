@@ -40,7 +40,8 @@ export function CountUp({
       started.current = true
       const start = performance.now()
       const tick = (now: number) => {
-        const t = Math.min((now - start) / duration, 1)
+        // rAF timestamps can predate `start`, so clamp to avoid negative values
+        const t = Math.min(Math.max((now - start) / duration, 0), 1)
         // easeOutExpo for a lively, decelerating climb
         const eased = t === 1 ? 1 : 1 - Math.pow(2, -10 * t)
         setDisplay(value * eased)

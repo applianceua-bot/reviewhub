@@ -8,7 +8,7 @@ const base =
   'inline-flex items-center justify-center gap-2 rounded-lg font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0'
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
+  primary: 'bg-brand text-brand-foreground hover:bg-brand/90',
   secondary: 'border border-border bg-secondary text-secondary-foreground hover:bg-secondary/70',
   ghost: 'text-muted-foreground hover:bg-secondary hover:text-foreground',
 }
