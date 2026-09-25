@@ -41,6 +41,14 @@ CREATE TABLE IF NOT EXISTS client_brands (
   PRIMARY KEY (user_id, brand_id)
 );
 
+-- Admin-edited overrides for the landing page's per-platform publication
+-- price (lib/site.ts's basePrice is the fallback for anything not in here).
+CREATE TABLE IF NOT EXISTS platform_prices (
+  platform   TEXT PRIMARY KEY,
+  price      REAL NOT NULL,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- Which platforms a brand is tracked on, and in what order the admin picked
 -- (drag-to-reorder in the brands page). A brand with no rows here falls back
 -- to whatever platforms already have data (see lib/data/brand-platforms.ts).
