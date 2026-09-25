@@ -12,6 +12,7 @@ import {
   blogPlatforms,
   site,
 } from '@/lib/site'
+import { PUBLICATION_TIERS, formatUsd, tierFor, unitPrice as calcUnitPrice } from '@/lib/pricing'
 import { revealDelay } from '@/lib/utils'
 
 type Group = 'review' | 'igaming' | 'crypto' | 'fintech' | 'blog'
@@ -33,11 +34,7 @@ const groups: {
   { id: 'blog', label: 'Сообщества', platforms: blogPlatforms },
 ]
 
-const TIERS = [
-  { id: 'low', min: 1, max: 49, label: '1–49 шт.', factor: 1 },
-  { id: 'mid', min: 50, max: 149, label: '50+ шт.', factor: 10 / 15 },
-  { id: 'high', min: 150, max: 1000, label: '150+ шт.', factor: 8 / 15 },
-] as const
+const TIERS = PUBLICATION_TIERS
 
 /**
  * The slider is piecewise-linear: each gap between neighbouring marks under it
@@ -63,18 +60,6 @@ function quantityToPosition(quantity: number) {
   return segment * STEPS_PER_SEGMENT + ((quantity - from) / (to - from)) * STEPS_PER_SEGMENT
 }
 
-function tierFor(qty: number) {
-  return TIERS.find((t) => qty >= t.min && qty <= t.max) ?? TIERS[TIERS.length - 1]
-}
-
-function formatUsd(value: number) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(value)
-}
-
 export function PriceCalculator() {
   const [group, setGroup] = useState<Group>('review')
   const [platformId, setPlatformId] = useState(reviewPlatforms[0].id as string)
@@ -91,7 +76,7 @@ export function PriceCalculator() {
   const activePlatforms = groups.find((g) => g.id === group)!.platforms
 
   const tier = tierFor(quantity)
-  const unitPrice = useMemo(() => Math.round(platform.basePrice * tier.factor), [platform, tier])
+  const unitPrice = useMemo(() => calcUnitPrice(platform.basePrice, quantity), [platform, quantity])
   const total = unitPrice * quantity
 
   function selectGroup(id: Group) {

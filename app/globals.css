@@ -329,6 +329,75 @@
   will-change: transform;
 }
 
+/* ── Dashboard charts & lists ──────────────────────────────
+   Same scroll-reveal mechanics as above, applied to the admin/cabinet
+   dashboard's server-rendered charts: an ancestor gets `data-reveal` and
+   these descendants animate in once it's marked `data-revealed`. Reuses
+   the rr-draw/rr-fade-up/rr-pop keyframes defined above. */
+@media (prefers-reduced-motion: no-preference) {
+  .js .dash-line {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  .js [data-revealed] .dash-line {
+    animation: rr-draw 1.3s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards;
+  }
+
+  .js .dash-area {
+    opacity: 0;
+  }
+  .js [data-revealed] .dash-area {
+    animation: rr-fade-up 1s ease-out 0.5s forwards;
+  }
+
+  .js .dash-dot {
+    opacity: 0;
+    transform-origin: center;
+  }
+  .js [data-revealed] .dash-dot {
+    animation: rr-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation-delay: var(--dot-delay, 1.1s);
+  }
+
+  .dash-bar-fill {
+    transform-origin: bottom;
+  }
+  .js .dash-bar-fill {
+    transform: scaleY(0);
+  }
+  .js [data-revealed] .dash-bar-fill {
+    transition:
+      transform 0.7s cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms),
+      opacity 0.2s ease;
+    transform: scaleY(1);
+  }
+
+  .dash-progress-fill {
+    transform-origin: left;
+  }
+  .js .dash-progress-fill {
+    transform: scaleX(0);
+  }
+  .js [data-revealed] .dash-progress-fill {
+    transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms);
+    transform: scaleX(1);
+  }
+
+  /* Uses the `scale` property (not `transform`) so it composes with the
+     Tailwind `-rotate-90` utility already on this svg instead of fighting it. */
+  .js .dash-donut {
+    opacity: 0;
+    scale: 0.85;
+  }
+  .js [data-revealed] .dash-donut {
+    transition:
+      opacity 0.7s ease-out,
+      scale 0.7s cubic-bezier(0.34, 1.2, 0.64, 1);
+    opacity: 1;
+    scale: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rr-animate .rr-line,
   .rr-animate .rr-area,
@@ -345,28 +414,29 @@
 }
 
 /* ── Client cabinet & admin panel ─────────────────────────────
-   SalesOps-style near-black dashboard with a burgundy accent. Scoped to
-   .dash so the landing keeps its graphite theme; Tailwind colour utilities
-   inside pick these values up automatically. */
+   Same graphite base as the landing page (see the "Graphite & Burgundy"
+   theme above), scoped to .dash so it composes over the SalesOps-style
+   layout instead of the previous near-black palette. Tailwind colour
+   utilities inside pick these values up automatically. */
 .dash {
-  --background: #020203;
-  --foreground: #eeeeee;
-  --card: #050607;
-  --card-foreground: #eeeeee;
-  --popover: #08090a;
-  --popover-foreground: #eeeeee;
+  --background: oklch(0.195 0.004 30);
+  --foreground: oklch(0.955 0.004 60);
+  --card: oklch(0.23 0.005 30);
+  --card-foreground: oklch(0.955 0.004 60);
+  --popover: oklch(0.25 0.005 30);
+  --popover-foreground: oklch(0.955 0.004 60);
   --primary: oklch(0.7 0.13 12);
   --primary-foreground: #ffffff;
   --brand: oklch(0.47 0.14 15);
   --brand-foreground: #ffffff;
-  --secondary: #101214;
-  --secondary-foreground: #eeeeee;
-  --muted: #101214;
-  --muted-foreground: #8f8f8f;
-  --accent: #101214;
-  --accent-foreground: #eeeeee;
-  --border: #191b1d;
-  --input: #1f2225;
+  --secondary: oklch(0.28 0.006 30);
+  --secondary-foreground: oklch(0.955 0.004 60);
+  --muted: oklch(0.28 0.006 30);
+  --muted-foreground: oklch(0.72 0.006 40);
+  --accent: oklch(0.28 0.006 30);
+  --accent-foreground: oklch(0.955 0.004 60);
+  --border: oklch(0.98 0 0 / 9%);
+  --input: oklch(0.98 0 0 / 12%);
   --ring: oklch(0.7 0.13 12);
   --radius: 0.5rem;
   --chart-1: oklch(0.62 0.16 12);
@@ -387,4 +457,29 @@
 .dash select,
 .dash textarea {
   color-scheme: dark;
+}
+
+/* ── Printable documents (e.g. the publications calculator's quote) ────
+   `.print-only` markup lives in the page for exactly this; everything else
+   is hidden so "Печать → Сохранить как PDF" produces a clean document
+   instead of a screenshot of the dark dashboard. */
+.print-only {
+  display: none;
+}
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-only,
+  .print-only * {
+    visibility: visible;
+  }
+  .print-only {
+    display: block;
+    position: absolute;
+    inset: 0;
+    padding: 32px;
+    background: #fff;
+    color: #111;
+  }
 }

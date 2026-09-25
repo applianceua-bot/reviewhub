@@ -53,6 +53,10 @@ export type RemovalCheck = {
   link_status: 'live' | 'removed' | 'unknown'
   last_checked: string | null
   reviewer_email: string | null
+  competitor_id: number | null
+  competitor_name: string | null
+  /** True when competitor_id was set by hand rather than matched by email. */
+  competitor_manual: number
 }
 
 export type RemovalFilter = {
@@ -62,6 +66,7 @@ export type RemovalFilter = {
   reviewType?: string
   month?: string
   search?: string
+  competitorId?: string
 }
 
 /** The removal-check journal for the given (already authorised) brands, newest first. */
@@ -78,19 +83,47 @@ export function listRemovalChecks(filter: RemovalFilter) {
   add('r.link_status = ?', filter.linkStatus)
   add('r.review_type = ?', filter.reviewType)
   add('substr(r.date, 1, 7) = ?', filter.month)
+  add('COALESCE(r.competitor_id, ce.competitor_id) = ?', filter.competitorId)
   if (filter.search) {
     where.push('(r.link LIKE ? OR r.reviewer_email LIKE ?)')
     params.push(`%${filter.search}%`, `%${filter.search}%`)
   }
   return all<RemovalCheck>(
     `SELECT r.id, r.brand_id, b.name AS brand, r.date, r.link, r.platform, r.process_raw, r.review_type,
-            r.link_status, r.last_checked, r.reviewer_email
-       FROM removal_checks r JOIN brands b ON b.id = r.brand_id
+            r.link_status, r.last_checked, r.reviewer_email,
+            COALESCE(r.competitor_id, ce.competitor_id) AS competitor_id,
+            c.name AS competitor_name,
+            (r.competitor_id IS NOT NULL) AS competitor_manual
+       FROM removal_checks r
+       JOIN brands b ON b.id = r.brand_id
+       LEFT JOIN competitor_emails ce ON ce.email = r.reviewer_email COLLATE NOCASE
+       LEFT JOIN competitors c ON c.id = COALESCE(r.competitor_id, ce.competitor_id)
       WHERE ${where.join(' AND ')}
       ORDER BY r.date DESC, r.id DESC
       LIMIT 5000`,
     ...params,
   )
+}
+
+export type Competitor = { id: number; name: string; note: string | null; emails: string[] }
+
+/** Known competitors and the emails matched against reviewer_email to auto-tag their reviews. */
+export function listCompetitors(): Competitor[] {
+  const rows = all<{ id: number; name: string; note: string | null; email: string | null }>(
+    `SELECT c.id, c.name, c.note, ce.email
+       FROM competitors c LEFT JOIN competitor_emails ce ON ce.competitor_id = c.id
+      ORDER BY c.name, ce.email`,
+  )
+  const byId = new Map<number, Competitor>()
+  for (const r of rows) {
+    const existing = byId.get(r.id)
+    if (existing) {
+      if (r.email) existing.emails.push(r.email)
+    } else {
+      byId.set(r.id, { id: r.id, name: r.name, note: r.note, emails: r.email ? [r.email] : [] })
+    }
+  }
+  return [...byId.values()]
 }
 
 export function removalMonths(brandIds: number[]) {

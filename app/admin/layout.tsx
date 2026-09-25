@@ -30,8 +30,7 @@ const NAV: NavGroup[] = [
   {
     title: 'Планирование',
     items: [
-      { href: '/admin/plan', label: 'План работ', icon: 'plan' },
-      { href: '/admin/calculator', label: 'Калькулятор', icon: 'forecast' },
+      { href: '/admin/calculator', label: 'Калькулятор публикаций', icon: 'calculator' },
       { href: '/admin/reports', label: 'Отчёты', icon: 'reports' },
     ],
   },

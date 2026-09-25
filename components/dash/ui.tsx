@@ -1,5 +1,5 @@
 import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, revealDelay } from '@/lib/utils'
 
 /** Building blocks for cabinet and admin pages (server-safe, no hooks). */
 
@@ -43,7 +43,7 @@ export function Card({
   bodyClassName?: string
 }) {
   return (
-    <section className={cn('min-w-0 rounded-lg border border-border bg-card', className)}>
+    <section data-reveal className={cn('min-w-0 rounded-lg border border-border bg-card', className)}>
       {(title || action) && (
         <div className="flex items-start justify-between gap-3 px-5 pt-5">
           <div>
@@ -90,14 +90,17 @@ export function Kpi({
   value,
   delta,
   hint,
+  revealIndex = 0,
 }: {
   label: string
   value: React.ReactNode
   delta?: React.ReactNode
   hint?: string
+  /** Position in a row of KPIs, so they cascade in left-to-right instead of firing at once. */
+  revealIndex?: number
 }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-5">
+    <div data-reveal style={revealDelay(revealIndex, 70)} className="card-lift rounded-lg border border-border bg-card p-5">
       <p className="text-sm text-muted-foreground">{label}</p>
       <div className="mt-2 flex items-end justify-between gap-2">
         <p className="text-2xl font-semibold tracking-tight tabular-nums">{value}</p>
@@ -160,10 +163,10 @@ export function Stars({ value }: { value: number }) {
   )
 }
 
-export function Progress({ value, className }: { value: number; className?: string }) {
+export function Progress({ value, className, revealIndex = 0 }: { value: number; className?: string; revealIndex?: number }) {
   return (
-    <div className={cn('h-1.5 overflow-hidden rounded-full bg-muted', className)}>
-      <div className="h-full rounded-full bg-primary" style={{ width: `${Math.max(0, Math.min(100, value * 100))}%` }} />
+    <div data-reveal style={revealDelay(revealIndex, 60)} className={cn('h-1.5 overflow-hidden rounded-full bg-muted', className)}>
+      <div className="dash-progress-fill h-full rounded-full bg-primary" style={{ width: `${Math.max(0, Math.min(100, value * 100))}%` }} />
     </div>
   )
 }

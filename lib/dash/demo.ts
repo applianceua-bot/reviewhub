@@ -23,7 +23,7 @@ export function demoOverview(): Overview {
     sentiment: { positive: 118, neutral: 21, negative: 17 },
     platforms: [
       { platform: 'trustpilot', rating: 4.3, reviewCount: 1423, ratingDelta: 0.1, newReviews: 71 },
-      { platform: 'google', rating: 4.4, reviewCount: 781, ratingDelta: 0.1, newReviews: 43 },
+      { platform: 'gmb', rating: 4.4, reviewCount: 781, ratingDelta: 0.1, newReviews: 43 },
       { platform: 'reviewsio', rating: 4.5, reviewCount: 407, ratingDelta: 0, newReviews: 29 },
       { platform: 'smartcustomer', rating: 4.1, reviewCount: 261, ratingDelta: 0.2, newReviews: 21 },
     ],

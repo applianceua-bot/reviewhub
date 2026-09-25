@@ -1,18 +1,18 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import {
   BarChart3,
   Building2,
+  Calculator,
   CalendarCheck,
   ChevronsLeft,
   ClipboardPen,
   FileText,
   Flag,
   LayoutDashboard,
-  LineChart,
   LogOut,
   Menu,
   MessagesSquare,
@@ -36,7 +36,7 @@ const ICONS = {
   mentions: MessagesSquare,
   integrations: Plug,
   plan: CalendarCheck,
-  forecast: LineChart,
+  calculator: Calculator,
   reports: FileText,
   expenses: Wallet,
   portfolio: BarChart3,
@@ -58,6 +58,11 @@ const COLLAPSE_KEY = 'rr-dash-collapsed'
 
 export function DashShell({ nav, user, logout, switchHref, children }: Props) {
   const pathname = usePathname()
+  const brand = useSearchParams().get('brand')
+  // Keeps the client's selected brand as they move between sections — without
+  // this, a client with several brands would land back on the first one every
+  // time they clicked a nav link.
+  const withBrand = (href: string) => (brand ? `${href}?brand=${brand}` : href)
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -84,7 +89,7 @@ export function DashShell({ nav, user, logout, switchHref, children }: Props) {
   const sidebar = (compact: boolean) => (
     <div className="flex h-full flex-col">
       <div className={cn('flex h-14 items-center border-b border-border', compact ? 'justify-center px-2' : 'px-4')}>
-        <Link href={user.role === 'admin' ? '/admin' : '/cabinet'} className="flex items-center gap-2 overflow-hidden">
+        <Link href={withBrand(user.role === 'admin' ? '/admin' : '/cabinet')} className="flex items-center gap-2 overflow-hidden">
           {compact ? (
             <span className="grid size-7 place-items-center rounded-md bg-brand text-xs font-bold text-brand-foreground">R</span>
           ) : (
@@ -108,7 +113,7 @@ export function DashShell({ nav, user, logout, switchHref, children }: Props) {
                 return (
                   <li key={item.href}>
                     <Link
-                      href={item.href}
+                      href={withBrand(item.href)}
                       title={compact ? item.label : undefined}
                       aria-current={active ? 'page' : undefined}
                       className={cn(

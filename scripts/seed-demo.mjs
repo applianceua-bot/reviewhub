@@ -10,6 +10,12 @@ import path from 'node:path'
 import { MIGRATIONS, SCHEMA } from '../lib/db/schema.ts'
 import { hashPassword } from '../lib/auth/password.ts'
 
+// This creates a real, working login (demo / demo-cabinet) — never run against a production database.
+if (process.env.NODE_ENV === 'production') {
+  console.error('Отказ: db:seed создаёт демо-аккаунт с известным паролем и не должен запускаться на продакшене (NODE_ENV=production).')
+  process.exit(1)
+}
+
 const DEMO_LOGIN = 'demo'
 const DEMO_PASSWORD = 'demo-cabinet'
 
@@ -55,7 +61,7 @@ const BRANDS = [
     target: 4.5,
     platforms: [
       ['trustpilot', 3.6, 4.3, 1180, 9],
-      ['google', 3.9, 4.4, 640, 5],
+      ['gmb', 3.9, 4.4, 640, 5],
       ['smartcustomer', 3.4, 4.1, 210, 2],
       ['reviewsio', 4.0, 4.5, 330, 3],
     ],
@@ -67,7 +73,7 @@ const BRANDS = [
     target: 4.6,
     platforms: [
       ['trustpilot', 4.1, 4.5, 2400, 14],
-      ['google', 4.2, 4.6, 980, 6],
+      ['gmb', 4.2, 4.6, 980, 6],
       ['hellopeter', 3.7, 4.2, 150, 1],
     ],
   },
@@ -95,7 +101,7 @@ const MENTION_TITLES = [
 
 const TASKS = [
   ['invitations', 'Запустить приглашения после покупки на Trustpilot', 'trustpilot'],
-  ['replies', 'Ответить на отзывы за неделю', 'google'],
+  ['replies', 'Ответить на отзывы за неделю', 'gmb'],
   ['complaints', 'Проверить, удалены ли спам-отзывы', 'trustpilot'],
   ['content', 'Обновить FAQ по комиссиям на сайте', null],
   ['monitoring', 'Еженедельный мониторинг упоминаний', null],
@@ -234,7 +240,7 @@ try {
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
     )
     insertCampaign.run(brandId, 'trustpilot', 'Приглашения после покупки', daysAgo(70), 1850, 212, 'active')
-    insertCampaign.run(brandId, 'google', 'Письмо после обращения в поддержку', daysAgo(40), 620, 58, 'active')
+    insertCampaign.run(brandId, 'gmb', 'Письмо после обращения в поддержку', daysAgo(40), 620, 58, 'active')
     insertCampaign.run(brandId, brand.platforms[2][0], 'Пилот: приглашения в приложении', daysAgo(120), 400, 31, 'finished')
 
     // Work plan.

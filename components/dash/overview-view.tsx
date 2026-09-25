@@ -4,7 +4,8 @@ import { platformColor, platformName } from '@/lib/dash/constants'
 import { formatShort } from '@/lib/dash/dates'
 import { AreaChart, BarChart, Donut } from '@/components/dash/charts'
 import { Badge, Card, Delta, Kpi, Progress } from '@/components/dash/ui'
-import { cn } from '@/lib/utils'
+import { CountUp } from '@/components/count-up'
+import { cn, revealDelay } from '@/lib/utils'
 
 const ACTIVITY_ICON = { review: Star, removal: Flag, task: CheckCircle2, mention: MessageSquare }
 const TONE_CLASS = {
@@ -23,14 +24,16 @@ export function OverviewView({ data }: { data: Overview }) {
     <div className="flex flex-col gap-6">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Kpi
+          revealIndex={0}
           label="Средний рейтинг"
-          value={data.rating !== null ? data.rating.toFixed(2) : '—'}
+          value={data.rating !== null ? <CountUp value={data.rating} decimals={2} /> : '—'}
           delta={<Delta value={data.ratingDelta} />}
           hint={`Цель ${data.targetRating.toFixed(1)} · изменение за 4 недели`}
         />
         <Kpi
+          revealIndex={1}
           label="Новые отзывы"
-          value={data.newReviews}
+          value={<CountUp value={data.newReviews} />}
           delta={
             <Delta
               value={data.newReviewsPrev ? (data.newReviews - data.newReviewsPrev) / data.newReviewsPrev : null}
@@ -40,14 +43,20 @@ export function OverviewView({ data }: { data: Overview }) {
           hint="За 4 недели на всех площадках"
         />
         <Kpi
+          revealIndex={2}
           label="Фейковых удалено площадками"
-          value={`${data.removal.removed} из ${data.removal.total}`}
+          value={
+            <>
+              <CountUp value={data.removal.removed} /> из <CountUp value={data.removal.total} />
+            </>
+          }
           delta={removedShare !== null ? <Badge tone="positive">{Math.round(removedShare * 100)}%</Badge> : undefined}
           hint={`${data.removal.pending} ещё висят на площадках`}
         />
         <Kpi
+          revealIndex={3}
           label="Ответы на отзывы"
-          value={data.replyRate !== null ? `${Math.round(data.replyRate * 100)}%` : '—'}
+          value={data.replyRate !== null ? <CountUp value={Math.round(data.replyRate * 100)} suffix="%" /> : '—'}
           hint={`Доля отзывов с опубликованным ответом за 90 дней${
             data.mentionsToAnswer ? ` · упоминаний ждут ответа: ${data.mentionsToAnswer}` : ''
           }`}
@@ -79,14 +88,19 @@ export function OverviewView({ data }: { data: Overview }) {
             <p className="text-sm text-muted-foreground">Данные по площадкам ещё не внесены.</p>
           ) : (
             <ul className="flex flex-col gap-4">
-              {data.platforms.map((p) => (
-                <li key={p.platform} className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1.5 sm:grid-cols-[160px_1fr_auto]">
+              {data.platforms.map((p, i) => (
+                <li
+                  key={p.platform}
+                  data-reveal
+                  style={revealDelay(i, 60)}
+                  className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1.5 sm:grid-cols-[160px_1fr_auto]"
+                >
                   <div className="flex items-center gap-2">
                     <span className="size-2 rounded-full" style={{ background: platformColor(p.platform) }} />
                     <span className="text-sm font-medium">{platformName(p.platform)}</span>
                   </div>
                   <div className="order-3 col-span-2 sm:order-none sm:col-span-1">
-                    <Progress value={p.rating / 5} />
+                    <Progress value={p.rating / 5} revealIndex={i} />
                     <p className="mt-1 text-xs text-muted-foreground">
                       {p.reviewCount.toLocaleString('ru-RU')} отзывов · +{p.newReviews} за 4 недели
                     </p>
@@ -109,7 +123,7 @@ export function OverviewView({ data }: { data: Overview }) {
               {data.activity.map((item, i) => {
                 const Icon = ACTIVITY_ICON[item.kind]
                 return (
-                  <li key={i} className="flex items-start gap-3">
+                  <li key={i} data-reveal style={revealDelay(i, 60)} className="flex items-start gap-3">
                     <span className={cn('grid size-7 shrink-0 place-items-center rounded-md', TONE_CLASS[item.tone])}>
                       <Icon className="size-3.5" />
                     </span>

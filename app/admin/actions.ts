@@ -6,6 +6,7 @@ import { get, run, transaction } from '@/lib/db'
 import { requireAdmin, revokeSessions } from '@/lib/auth/session'
 import { generatePassword, hashPassword, MIN_PASSWORD_LENGTH } from '@/lib/auth/password'
 import { PLATFORMS, SUSPICION_REASONS, platformName } from '@/lib/dash/constants'
+import { brandPlatformKeys } from '@/lib/data/brand-platforms'
 import { weekStart, fromDateKey, today } from '@/lib/dash/dates'
 import { date, FormError, id, integer, number, oneOf, requiredText, text, url } from '@/lib/dash/parse'
 
@@ -80,6 +81,51 @@ export async function deleteBrand(fd: FormData) {
   await handle(fd, 'Бренд и все его данные удалены.', () => {
     run('DELETE FROM brands WHERE id = ?', id(fd))
   })
+}
+
+// ── Brand platforms ──────────────────────────────────────────────
+// A brand with no brand_platforms rows shows platforms it already has data
+// on (see lib/data/brand-platforms.ts). The first add/remove/reorder here
+// promotes that computed list into real rows, so nothing already tracked
+// silently disappears the moment the admin touches the list.
+function ensureBrandPlatformsSeeded(brandIdValue: number) {
+  const { n } = get<{ n: number }>('SELECT COUNT(*) AS n FROM brand_platforms WHERE brand_id = ?', brandIdValue)!
+  if (n > 0) return
+  brandPlatformKeys(brandIdValue).forEach((key, i) =>
+    run('INSERT OR IGNORE INTO brand_platforms (brand_id, platform, sort_order) VALUES (?, ?, ?)', brandIdValue, key, i),
+  )
+}
+
+export async function addBrandPlatform(fd: FormData) {
+  await handle(fd, 'Площадка добавлена.', () => {
+    const brand = brandId(fd)
+    const key = platform(fd)
+    ensureBrandPlatformsSeeded(brand)
+    const { next } = get<{ next: number }>('SELECT COALESCE(MAX(sort_order), -1) + 1 AS next FROM brand_platforms WHERE brand_id = ?', brand)!
+    run('INSERT OR IGNORE INTO brand_platforms (brand_id, platform, sort_order) VALUES (?, ?, ?)', brand, key, next)
+  })
+}
+
+export async function removeBrandPlatform(fd: FormData) {
+  await handle(fd, 'Площадка убрана.', () => {
+    const brand = brandId(fd)
+    const key = platform(fd)
+    ensureBrandPlatformsSeeded(brand)
+    run('DELETE FROM brand_platforms WHERE brand_id = ? AND platform = ?', brand, key)
+  })
+}
+
+/** Called directly from the drag-to-reorder list, not a <form> — persists silently, no flash message. */
+export async function reorderBrandPlatforms(brandIdValue: number, orderedKeys: string[]) {
+  await requireAdmin()
+  if (!Number.isInteger(brandIdValue) || !get('SELECT 1 FROM brands WHERE id = ?', brandIdValue)) return
+  const allowed = new Set(PLATFORM_KEYS as readonly string[])
+  const clean = orderedKeys.filter((key, i, arr) => allowed.has(key) && arr.indexOf(key) === i)
+  ensureBrandPlatformsSeeded(brandIdValue)
+  transaction(() => {
+    clean.forEach((key, i) => run('UPDATE brand_platforms SET sort_order = ? WHERE brand_id = ? AND platform = ?', i, brandIdValue, key))
+  })
+  revalidatePath('/admin/brands')
 }
 
 // ── Clients ───────────────────────────────────────────────────────
@@ -322,21 +368,6 @@ export async function saveConnection(fd: FormData) {
 
 // ── Work plan & campaigns ─────────────────────────────────────────
 
-export async function addTask(fd: FormData) {
-  await handle(fd, 'Задача добавлена.', () => {
-    const platformValue = String(fd.get('platform') ?? '')
-    run(
-      'INSERT INTO tasks (brand_id, platform, kind, title, due_date, assignee) VALUES (?, ?, ?, ?, ?, ?)',
-      brandId(fd),
-      platformValue ? platform(fd) : null,
-      oneOf(fd, 'kind', ['invitations', 'replies', 'complaints', 'content', 'monitoring', 'other'] as const),
-      requiredText(fd, 'title', 300),
-      date(fd, 'due_date', { required: false }),
-      text(fd, 'assignee', { max: 80 }),
-    )
-  })
-}
-
 export async function updateTaskStatus(fd: FormData) {
   await handle(fd, null, () => {
     run('UPDATE tasks SET status = ? WHERE id = ?', oneOf(fd, 'status', ['todo', 'in_progress', 'done'] as const), id(fd))
@@ -446,41 +477,4 @@ export async function logSubscriptionPayment(fd: FormData) {
 
 export async function deleteSubscription(fd: FormData) {
   await handle(fd, 'Подписка удалена.', () => run('DELETE FROM subscriptions WHERE id = ?', id(fd)))
-}
-
-// ── Rating calculator plans ───────────────────────────────────────
-
-/** Saves one brand's quarter plan from the calculator. Every field is re-validated here. */
-export async function saveForecastPlan(brandIdValue: number, quarter: string, plan: unknown) {
-  await requireAdmin()
-  if (!Number.isInteger(brandIdValue) || !get('SELECT 1 FROM brands WHERE id = ?', brandIdValue)) return { error: 'Бренд не найден.' }
-  if (!/^Q[1-4] \d{4}$/.test(quarter)) return { error: 'Неверный квартал.' }
-  const p = plan as { conversion?: unknown; rows?: unknown }
-  const num = (v: unknown, min: number, max: number) => (typeof v === 'number' && Number.isFinite(v) && v >= min && v <= max ? v : null)
-  const conversion = num(p?.conversion, 0.001, 1)
-  if (conversion === null || !Array.isArray(p.rows) || p.rows.length > 50) return { error: 'Неверные данные плана.' }
-  const rows = []
-  for (const raw of p.rows as Record<string, unknown>[]) {
-    const row = {
-      platform: String(raw.platform),
-      enabled: raw.enabled === true,
-      mode: raw.mode === 'target' ? 'target' : 'manual',
-      perMonth: num(raw.perMonth, 0, 1_000_000),
-      avgNew: num(raw.avgNew, 1, 5),
-      invitePrice: num(raw.invitePrice, 0, 10_000),
-      replyPrice: num(raw.replyPrice, 0, 10_000),
-    }
-    if (!PLATFORM_KEYS.includes(row.platform as (typeof PLATFORM_KEYS)[number]) || [row.perMonth, row.avgNew, row.invitePrice, row.replyPrice].includes(null)) {
-      return { error: 'Неверные данные плана.' }
-    }
-    rows.push(row)
-  }
-  run(
-    `INSERT INTO forecast_plans (brand_id, quarter, data) VALUES (?, ?, ?)
-     ON CONFLICT (brand_id, quarter) DO UPDATE SET data = excluded.data, updated_at = datetime('now')`,
-    brandIdValue,
-    quarter,
-    JSON.stringify({ conversion, rows }),
-  )
-  return { savedAt: new Date().toISOString() }
 }

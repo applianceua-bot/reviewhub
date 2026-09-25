@@ -41,6 +41,33 @@ CREATE TABLE IF NOT EXISTS client_brands (
   PRIMARY KEY (user_id, brand_id)
 );
 
+-- Which platforms a brand is tracked on, and in what order the admin picked
+-- (drag-to-reorder in the brands page). A brand with no rows here falls back
+-- to whatever platforms already have data (see lib/data/brand-platforms.ts).
+CREATE TABLE IF NOT EXISTS brand_platforms (
+  brand_id   INTEGER NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+  platform   TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (brand_id, platform)
+);
+
+-- Known competitors and the email addresses they tend to post fake reviews
+-- from. removal_checks.competitor_id (added below via MIGRATIONS) is a
+-- manual override; without one, a row is matched to a competitor by
+-- reviewer_email at read time (see lib/data/lists.ts).
+CREATE TABLE IF NOT EXISTS competitors (
+  id         INTEGER PRIMARY KEY,
+  name       TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  note       TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS competitor_emails (
+  competitor_id INTEGER NOT NULL REFERENCES competitors(id) ON DELETE CASCADE,
+  email         TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  PRIMARY KEY (competitor_id, email)
+);
+
 -- Weekly snapshot of a brand's public profile on one platform.
 -- review_count is the cumulative total shown on the platform that week;
 -- new reviews for a period are the difference between snapshots.
@@ -176,15 +203,6 @@ CREATE TABLE IF NOT EXISTS expenses (
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- Saved quarter plans of the rating calculator, one JSON document per brand and quarter.
-CREATE TABLE IF NOT EXISTS forecast_plans (
-  brand_id   INTEGER NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
-  quarter    TEXT NOT NULL,
-  data       TEXT NOT NULL,
-  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-  PRIMARY KEY (brand_id, quarter)
-);
-
 CREATE INDEX IF NOT EXISTS entries_brand_idx    ON entries (brand_id, week_start);
 CREATE INDEX IF NOT EXISTS reviews_brand_idx    ON reviews (brand_id, published_at);
 CREATE INDEX IF NOT EXISTS removal_brand_idx   ON removal_checks (brand_id, date);
@@ -197,4 +215,6 @@ CREATE INDEX IF NOT EXISTS sessions_user_idx    ON sessions (user_id);
 export const MIGRATIONS: [string, string, string][] = [
   // Reviewer's email as shown in the platform's business account (e.g. invited reviews on Trustpilot).
   ['removal_checks', 'reviewer_email', 'TEXT'],
+  // Manual competitor tag; overrides the email-based match when set.
+  ['removal_checks', 'competitor_id', 'INTEGER REFERENCES competitors(id) ON DELETE SET NULL'],
 ]

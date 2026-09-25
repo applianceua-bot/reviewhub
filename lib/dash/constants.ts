@@ -1,18 +1,44 @@
 /** Labels and lookups shared by the cabinet, the admin panel and the landing demo. */
 
-export const PLATFORMS = [
-  { key: 'trustpilot', name: 'Trustpilot', domain: 'trustpilot.com', color: 'var(--chart-2)' },
-  { key: 'google', name: 'Google', domain: 'google.com', color: 'var(--chart-1)' },
-  { key: 'smartcustomer', name: 'SmartCustomer', domain: 'smartcustomer.com', color: 'var(--chart-3)' },
-  { key: 'reviewsio', name: 'Reviews.io', domain: 'reviews.io', color: 'var(--chart-5)' },
-  { key: 'hellopeter', name: 'Hellopeter', domain: 'hellopeter.com', color: 'var(--chart-4)' },
-  { key: 'g2', name: 'G2', domain: 'g2.com', color: 'var(--chart-6)' },
-  { key: 'capterra', name: 'Capterra', domain: 'capterra.com', color: 'var(--chart-2)' },
-  { key: 'appstore', name: 'App Store', domain: 'apple.com', color: 'var(--chart-1)' },
-  { key: 'googleplay', name: 'Google Play', domain: 'play.google.com', color: 'var(--chart-3)' },
-  { key: 'pissedconsumer', name: 'PissedConsumer', domain: 'pissedconsumer.com', color: 'var(--chart-4)' },
-  { key: 'realreviews', name: 'RealReviews', domain: 'realreviews.io', color: 'var(--chart-5)' },
-] as const
+import { reviewPlatforms, igamingPlatforms, cryptoPlatforms, fintechPlatforms, blogPlatforms } from '@/lib/site'
+
+const CHART_COLORS = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)', 'var(--chart-6)']
+
+/**
+ * Two platforms clients get reviewed on that the landing page's pricing
+ * calculator doesn't sell publications for, so they live only here.
+ */
+const APP_STORE_PLATFORMS = [
+  { id: 'appstore', name: 'App Store', domain: 'apple.com' },
+  { id: 'googleplay', name: 'Google Play', domain: 'play.google.com' },
+]
+
+const CATEGORIES = [
+  { label: 'Отзывы', platforms: reviewPlatforms },
+  { label: 'iGaming', platforms: igamingPlatforms },
+  { label: 'Crypto', platforms: cryptoPlatforms },
+  { label: 'Fintech', platforms: fintechPlatforms },
+  { label: 'Сообщества', platforms: blogPlatforms },
+  { label: 'App Store', platforms: APP_STORE_PLATFORMS },
+]
+
+/**
+ * Every platform selectable in the cabinet and admin panel's data-entry
+ * forms. Built from lib/site.ts's platform catalog — the landing page's
+ * pricing calculator and the "Площадки" section — so this list can't drift
+ * out of sync with what's shown to prospects, plus APP_STORE_PLATFORMS above.
+ * `category` groups the catalog when picking a brand's platforms (see
+ * components/dash/admin/brand-platforms.tsx).
+ */
+export const PLATFORMS = CATEGORIES.flatMap((c) => c.platforms.map((p) => ({ ...p, category: c.label }))).map((p, i) => ({
+  key: p.id,
+  name: p.name,
+  domain: p.domain,
+  category: p.category,
+  color: CHART_COLORS[i % CHART_COLORS.length],
+  // Only the landing catalog sells publications; APP_STORE_PLATFORMS has none.
+  basePrice: 'basePrice' in p ? p.basePrice : null,
+}))
 
 export type PlatformKey = (typeof PLATFORMS)[number]['key']
 
@@ -24,12 +50,24 @@ export function platformColor(key: string) {
   return PLATFORMS.find((p) => p.key === key)?.color ?? 'var(--chart-5)'
 }
 
+/** Price per publication at volume 1–49, or null for platforms we don't sell publications on (App Store, Google Play). */
+export function platformBasePrice(key: string): number | null {
+  return PLATFORMS.find((p) => p.key === key)?.basePrice ?? null
+}
+
 /** Resolves a platform typed by hand or exported from another tool ("review.io", "Hellopeter") to its key. */
 export function matchPlatform(value: string | undefined) {
   const normalize = (s: string) => s.trim().toLowerCase().replace(/[\s.]/g, '')
   const v = normalize(value ?? '')
   if (!v) return null
-  const aliases: Record<string, string> = { reviewio: 'reviewsio', sitejabber: 'smartcustomer', googlereviews: 'google' }
+  const aliases: Record<string, string> = {
+    reviewio: 'reviewsio',
+    sitejabber: 'smartcustomer',
+    google: 'gmb',
+    googlereviews: 'gmb',
+    googlebusiness: 'gmb',
+    googlebusinessprofile: 'gmb',
+  }
   const key = aliases[v] ?? v
   return PLATFORMS.find((p) => p.key === key || normalize(p.name) === key)?.key ?? null
 }
@@ -37,7 +75,30 @@ export function matchPlatform(value: string | undefined) {
 export const MENTION_PLATFORMS = ['Reddit', 'Quora', 'X', 'Форум', 'СМИ', 'Блог'] as const
 
 /** Platforms with an official API we can sync from (see Integrations). */
-export const API_PLATFORMS = ['trustpilot', 'reviewsio', 'hellopeter', 'smartcustomer'] as const
+/**
+ * Platforms with a real API a business can self-serve (own API key, no
+ * partner/rep relationship needed) for pulling or replying to reviews.
+ * Checked against each platform's current developer docs — see
+ * app/admin/integrations/page.tsx for per-platform field hints and caveats.
+ * Deliberately excluded: G2/Capterra/GetApp (review API is partner-gated,
+ * no self-serve key), TrustRadius, BBB-style complaint boards, iGaming
+ * complaint boards (Casino.Guru, AskGamblers, Casinomeister, LCB), Quora
+ * (no content API, only their unrelated Poe product) — none of these offer
+ * a self-serve developer key today.
+ */
+export const API_PLATFORMS = [
+  'trustpilot',
+  'reviewsio',
+  'hellopeter',
+  'smartcustomer',
+  'gmb',
+  'yelp',
+  'appstore',
+  'googleplay',
+  'feefo',
+  'trustedshops',
+  'ekomi',
+] as const
 
 export const SENTIMENT_LABEL: Record<string, string> = {
   positive: 'Позитив',

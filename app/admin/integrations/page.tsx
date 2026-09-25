@@ -3,14 +3,18 @@ import { listConnectionStatus } from '@/lib/data/lists'
 import { API_PLATFORMS, platformName } from '@/lib/dash/constants'
 import { BrandHeader, NoBrands } from '@/components/dash/brand-header'
 import { Badge, Card, PageBody } from '@/components/dash/ui'
-import { Field, Flash, Input } from '@/components/dash/fields'
+import { Field, Flash, Input, Textarea } from '@/components/dash/fields'
 import { SubmitButton } from '@/components/dash/controls'
 import { saveConnection } from '@/app/admin/actions'
 
 export const metadata = { title: 'Интеграции' }
 
-// Only Trustpilot's developer portal is linked; the others are reached from each platform's business account.
-const HINTS: Record<string, { id: string; key: string; docs?: string }> = {
+/**
+ * Field labels and docs per platform, checked against each one's current
+ * developer documentation (see API_PLATFORMS in lib/dash/constants.ts for
+ * which platforms were checked and rejected, and why).
+ */
+const HINTS: Record<string, { id: string; key: string; docs?: string; note?: string; multiline?: boolean }> = {
   trustpilot: {
     id: 'Business Unit ID',
     key: 'API key из Trustpilot Business → Integrations',
@@ -18,7 +22,36 @@ const HINTS: Record<string, { id: string; key: string; docs?: string }> = {
   },
   reviewsio: { id: 'Store ID', key: 'API key из кабинета Reviews.io' },
   hellopeter: { id: 'Business slug', key: 'Business API key Hellopeter' },
-  smartcustomer: { id: 'Домен компании', key: 'Токен доступа SmartCustomer' },
+  smartcustomer: { id: 'Домен компании', key: 'Токен доступа SmartCustomer (бывший Sitejabber)' },
+  gmb: {
+    id: 'Location ID (Google Business Profile)',
+    key: 'OAuth-токен Business Profile API',
+    docs: 'https://developers.google.com/my-business',
+    note: 'Нужен доступ через Google Cloud проект и OAuth-согласие владельца профиля.',
+  },
+  yelp: {
+    id: 'Business ID (Yelp)',
+    key: 'API key из Yelp Fusion',
+    docs: 'https://docs.developer.yelp.com/',
+    note: 'Полный список отзывов и ответы на них доступны только на платном тарифе Fusion (Enhanced/Premium).',
+  },
+  appstore: {
+    id: 'Apple ID приложения',
+    key: 'Ключ App Store Connect API (Issuer ID, Key ID и содержимое .p8)',
+    docs: 'https://developer.apple.com/documentation/appstoreconnectapi',
+    note: 'API отдаёт только окно примерно за последние 7 дней — старые отзывы им не подтянуть.',
+    multiline: true,
+  },
+  googleplay: {
+    id: 'Package name приложения',
+    key: 'JSON-ключ сервисного аккаунта Google Play Console',
+    docs: 'https://developers.google.com/android-publisher',
+    note: 'Как и у Apple, API показывает только недавнее окно отзывов.',
+    multiline: true,
+  },
+  feefo: { id: 'Merchant identifier Feefo', key: 'API key Feefo (Reviews API)', docs: 'https://feefo.readme.io/reference' },
+  trustedshops: { id: 'Channel ID / Shop ID', key: 'API-токен Trusted Shops (eTrusted)', docs: 'https://api.trustedshops.com/' },
+  ekomi: { id: 'Interface ID eKomi', key: 'API-токен eKomi', docs: 'https://www.ekomi.com/sdk-documentation' },
 }
 
 export default async function IntegrationsPage({ searchParams }: PageProps<'/admin/integrations'>) {
@@ -61,8 +94,13 @@ export default async function IntegrationsPage({ searchParams }: PageProps<'/adm
                     <Input name="business_id" maxLength={200} defaultValue={c?.business_id ?? ''} />
                   </Field>
                   <Field label={c?.has_key ? `${hint.key} · ключ сохранён` : hint.key}>
-                    <Input name="api_key" type="password" autoComplete="off" placeholder={c?.has_key ? '••••••••  (оставьте пустым, чтобы не менять)' : ''} />
+                    {hint.multiline ? (
+                      <Textarea name="api_key" autoComplete="off" placeholder={c?.has_key ? '(оставьте пустым, чтобы не менять)' : ''} />
+                    ) : (
+                      <Input name="api_key" type="password" autoComplete="off" placeholder={c?.has_key ? '••••••••  (оставьте пустым, чтобы не менять)' : ''} />
+                    )}
                   </Field>
+                  {hint.note && <p className="text-xs text-muted-foreground">{hint.note}</p>}
                   <div className="flex flex-wrap items-center gap-3">
                     <SubmitButton variant="secondary">Сохранить</SubmitButton>
                     {c?.has_key ? (

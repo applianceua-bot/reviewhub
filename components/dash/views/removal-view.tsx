@@ -1,10 +1,10 @@
 import { RefreshCw, Trash2 } from 'lucide-react'
-import type { RemovalCheck } from '@/lib/data/lists'
+import type { Competitor, RemovalCheck } from '@/lib/data/lists'
 import { LINK_STATUS_LABEL, REVIEW_TYPE_LABEL, platformColor, platformName } from '@/lib/dash/constants'
 import { formatShort, fromDateKey } from '@/lib/dash/dates'
 import { Card, Empty } from '@/components/dash/ui'
 import { AutoSubmitSelect, SubmitButton } from '@/components/dash/controls'
-import { checkRemovalLinks, deleteRemovalCheck, setLinkStatus, setReviewType } from '@/app/admin/removal-actions'
+import { checkRemovalLinks, deleteRemovalCheck, setCompetitor, setLinkStatus, setReviewType } from '@/app/admin/removal-actions'
 import { cn } from '@/lib/utils'
 
 /*
@@ -63,7 +63,7 @@ function groupShare(rows: RemovalCheck[], key: (r: RemovalCheck) => string) {
 
 const TYPE_COLOR: Record<string, string> = { real: 'var(--positive)', fake: 'var(--negative)', unknown: 'var(--muted-foreground)' }
 
-export function RemovalStats({ rows }: { rows: RemovalCheck[] }) {
+export function RemovalStats({ rows, admin = false }: { rows: RemovalCheck[]; admin?: boolean }) {
   const total = rows.length
   const live = rows.filter((r) => r.link_status === 'live').length
   const removed = rows.filter((r) => r.link_status === 'removed').length
@@ -77,6 +77,8 @@ export function RemovalStats({ rows }: { rows: RemovalCheck[] }) {
     color: TYPE_COLOR[g.label],
     label: REVIEW_TYPE_LABEL[g.label],
   }))
+  const competitorRows = rows.filter((r) => r.competitor_name)
+  const byCompetitor = groupShare(competitorRows, (r) => r.competitor_name!).sort((a, b) => b.total - a.total)
 
   return (
     <>
@@ -104,7 +106,7 @@ export function RemovalStats({ rows }: { rows: RemovalCheck[] }) {
         ))}
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className={cn('grid gap-4', admin && byCompetitor.length > 0 ? 'xl:grid-cols-3' : 'xl:grid-cols-2')}>
         <Card title="Доля удалённых по площадкам">
           <ShareBars rows={byPlatform} />
         </Card>
@@ -114,6 +116,11 @@ export function RemovalStats({ rows }: { rows: RemovalCheck[] }) {
         >
           <ShareBars rows={byType} />
         </Card>
+        {admin && byCompetitor.length > 0 && (
+          <Card title="Доля удалённых по конкурентам" description="Отзывы, помеченные как отзыв конкурента — вручную или по почте автора.">
+            <ShareBars rows={byCompetitor} />
+          </Card>
+        )}
       </div>
     </>
   )
@@ -123,9 +130,10 @@ const LINK_TONE: Record<string, string> = { live: 'text-positive', removed: 'tex
 const LINK_OPTIONS = Object.fromEntries(Object.entries(LINK_STATUS_LABEL).map(([k, v]) => [k, v.toLowerCase()]))
 
 /** The journal table. With `back` set (admin), type and status are editable and links can be re-checked. */
-export function RemovalJournal({ rows, back }: { rows: RemovalCheck[]; back?: string }) {
+export function RemovalJournal({ rows, back, competitors = [] }: { rows: RemovalCheck[]; back?: string; competitors?: Competitor[] }) {
   if (rows.length === 0) return <Empty>Журнал пуст — загрузите CSV выше, чтобы добавить первые записи.</Empty>
   const admin = Boolean(back)
+  const competitorOptions = Object.fromEntries(competitors.map((c) => [c.id, c.name]))
   return (
     <div className="-mx-5 overflow-x-auto">
       <table className="w-full min-w-[900px] border-collapse text-xs [&_td]:px-2 [&_td]:py-2 [&_td]:align-middle [&_th]:px-2 [&_th]:py-2">
@@ -140,6 +148,7 @@ export function RemovalJournal({ rows, back }: { rows: RemovalCheck[]; back?: st
             <th>Процесс</th>
             <th>Тип</th>
             <th>Статус</th>
+            {admin && <th>Конкурент</th>}
             <th className="pr-5!">Проверка</th>
           </tr>
         </thead>
@@ -192,6 +201,22 @@ export function RemovalJournal({ rows, back }: { rows: RemovalCheck[]; back?: st
                     <span className={cn('font-semibold', LINK_TONE[r.link_status])}>{LINK_OPTIONS[r.link_status]}</span>
                   )}
                 </td>
+                {admin && (
+                  <td className="min-w-32">
+                    <form action={setCompetitor}>
+                      <input type="hidden" name="id" value={r.id} />
+                      <input type="hidden" name="back" value={back} />
+                      <AutoSubmitSelect
+                        name="competitor_id"
+                        label="Конкурент"
+                        defaultValue={r.competitor_id ? String(r.competitor_id) : ''}
+                        placeholder="—"
+                        options={competitorOptions}
+                      />
+                      {r.competitor_id && !r.competitor_manual && <p className="mt-0.5 text-[10px] text-muted-foreground">по почте</p>}
+                    </form>
+                  </td>
+                )}
                 <td className="pr-5! whitespace-nowrap">
                   {admin && (
                     <div className="flex items-center gap-1">

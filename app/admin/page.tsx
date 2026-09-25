@@ -5,6 +5,8 @@ import { getOverview } from '@/lib/data/overview'
 import { all } from '@/lib/db'
 import { Badge, Card, Delta, Empty, Kpi, PageBody, PageHeader, Progress, Table } from '@/components/dash/ui'
 import { buttonClass } from '@/components/dash/styles'
+import { CountUp } from '@/components/count-up'
+import { revealDelay } from '@/lib/utils'
 
 export const metadata = { title: 'Портфель' }
 
@@ -43,10 +45,18 @@ export default async function AdminHome() {
       />
       <PageBody>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <Kpi label="Бренды на целевом рейтинге" value={`${onTarget} из ${brands.length}`} />
-          <Kpi label="Новых отзывов за 4 недели" value={totals.newReviews} />
-          <Kpi label="Фейковых ещё висит" value={totals.open} hint={`Удалено площадками: ${totals.removed}`} />
-          <Kpi label="Упоминаний ждут ответа" value={totals.mentions} />
+          <Kpi
+            revealIndex={0}
+            label="Бренды на целевом рейтинге"
+            value={
+              <>
+                <CountUp value={onTarget} /> из <CountUp value={brands.length} />
+              </>
+            }
+          />
+          <Kpi revealIndex={1} label="Новых отзывов за 4 недели" value={<CountUp value={totals.newReviews} />} />
+          <Kpi revealIndex={2} label="Фейковых ещё висит" value={<CountUp value={totals.open} />} hint={`Удалено площадками: ${totals.removed}`} />
+          <Kpi revealIndex={3} label="Упоминаний ждут ответа" value={<CountUp value={totals.mentions} />} />
         </div>
 
         <Card title="Бренды">
@@ -66,8 +76,8 @@ export default async function AdminHome() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map(({ brand, o }) => (
-                  <tr key={brand.id}>
+                {rows.map(({ brand, o }, i) => (
+                  <tr key={brand.id} data-reveal style={revealDelay(i, 40)}>
                     <td>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{brand.name}</span>
@@ -82,7 +92,7 @@ export default async function AdminHome() {
                       </div>
                     </td>
                     <td className="min-w-32">
-                      <Progress value={o.rating ? Math.min(o.rating / o.targetRating, 1) : 0} />
+                      <Progress value={o.rating ? Math.min(o.rating / o.targetRating, 1) : 0} revealIndex={i} />
                       <p className="mt-1 text-xs text-muted-foreground">цель {o.targetRating.toFixed(1)}</p>
                     </td>
                     <td className="tabular-nums">{o.newReviews}</td>

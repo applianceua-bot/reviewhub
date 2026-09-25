@@ -1,17 +1,17 @@
 import { RefreshCw } from 'lucide-react'
 import { requireAdmin } from '@/lib/auth/session'
 import { accessibleBrands } from '@/lib/data/access'
-import { listRemovalChecks, removalMonths } from '@/lib/data/lists'
+import { listCompetitors, listRemovalChecks, removalMonths } from '@/lib/data/lists'
 import { firstParam } from '@/lib/dash/page'
 import { LINK_STATUS_LABEL, PLATFORMS, REVIEW_TYPE_LABEL } from '@/lib/dash/constants'
 import { today } from '@/lib/dash/dates'
 import { Card, PageBody, PageHeader } from '@/components/dash/ui'
-import { Field, Flash, Input, Select } from '@/components/dash/fields'
+import { Field, Flash, Input, Select, Textarea } from '@/components/dash/fields'
 import { AutoSubmitSelect, SubmitButton } from '@/components/dash/controls'
 import { inputClass } from '@/components/dash/styles'
 import { JournalImport, SampleCsvButton } from '@/components/dash/admin/journal-import'
 import { RemovalJournal, RemovalStats, monthLabel } from '@/components/dash/views/removal-view'
-import { addRemovalCheck, checkRemovalLinks } from '@/app/admin/removal-actions'
+import { addRemovalCheck, checkRemovalLinks, deleteCompetitor, saveCompetitor } from '@/app/admin/removal-actions'
 
 export const metadata = { title: 'Проверка на удаление' }
 
@@ -30,15 +30,23 @@ export default async function RemovalPage({ searchParams }: PageProps<'/admin/re
   const reviewType = pick(firstParam(sp.type), ['real', 'fake', 'unknown'] as const)
   const month = /^\d{4}-\d{2}$/.test(firstParam(sp.month) ?? '') ? firstParam(sp.month) : undefined
   const search = (firstParam(sp.q) ?? '').trim().slice(0, 200) || undefined
+  const competitors = listCompetitors()
+  const competitorId = pick(firstParam(sp.competitor), competitors.map((c) => String(c.id)))
 
   const scope = brandId ? [brandId] : brands.map((b) => b.id)
   const everything = listRemovalChecks({ brandIds: scope })
-  const rows = listRemovalChecks({ brandIds: scope, platform, linkStatus, reviewType, month, search })
+  const rows = listRemovalChecks({ brandIds: scope, platform, linkStatus, reviewType, month, search, competitorId })
 
   const query = new URLSearchParams(
-    Object.entries({ brand: brandId ? String(brandId) : undefined, platform, status: linkStatus, type: reviewType, month, q: search }).filter(
-      (e): e is [string, string] => Boolean(e[1]),
-    ),
+    Object.entries({
+      brand: brandId ? String(brandId) : undefined,
+      platform,
+      status: linkStatus,
+      type: reviewType,
+      month,
+      q: search,
+      competitor: competitorId,
+    }).filter((e): e is [string, string] => Boolean(e[1])),
   ).toString()
   const back = `/admin/removal${query ? `?${query}` : ''}`
 
@@ -86,7 +94,72 @@ export default async function RemovalPage({ searchParams }: PageProps<'/admin/re
           </details>
         </Card>
 
-        {everything.length > 0 && <RemovalStats rows={everything} />}
+        <Card
+          title="Конкуренты"
+          description="Площадки помечают отзывы как «живой»/«удалён» — здесь вы фиксируете, что конкретный отзыв оставил конкурент. Почты ниже помечают все его прошлые и будущие отзывы автоматически; на отдельной строке журнала конкурента можно поставить и вручную."
+        >
+          {competitors.length > 0 && (
+            <ul className="mb-4 flex flex-col gap-2">
+              {competitors.map((c) => (
+                <li key={c.id} className="rounded-md border border-border px-3 py-2 text-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <span className="font-medium">{c.name}</span>
+                      {c.note && <span className="ml-2 text-xs text-muted-foreground">{c.note}</span>}
+                    </div>
+                    <form action={deleteCompetitor}>
+                      <input type="hidden" name="id" value={c.id} />
+                      <input type="hidden" name="back" value={back} />
+                      <SubmitButton variant="ghost" className="h-7 px-2 text-xs" confirm={`Удалить конкурента «${c.name}»? Отзывы, отмеченные вручную, потеряют пометку.`}>
+                        Удалить
+                      </SubmitButton>
+                    </form>
+                  </div>
+                  <p className="mt-1 break-all text-xs text-muted-foreground">{c.emails.length > 0 ? c.emails.join(', ') : 'Почты не указаны — только ручные пометки'}</p>
+                  <details className="mt-1.5">
+                    <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">Изменить</summary>
+                    <form action={saveCompetitor} className="mt-2 grid gap-3 sm:grid-cols-2">
+                      <input type="hidden" name="id" value={c.id} />
+                      <input type="hidden" name="back" value={back} />
+                      <Field label="Название">
+                        <Input name="name" required maxLength={120} defaultValue={c.name} />
+                      </Field>
+                      <Field label="Заметка">
+                        <Input name="note" maxLength={300} defaultValue={c.note ?? ''} />
+                      </Field>
+                      <Field label="Почты (по одной на строку или через запятую)" className="sm:col-span-2">
+                        <Textarea name="emails" defaultValue={c.emails.join('\n')} />
+                      </Field>
+                      <div>
+                        <SubmitButton variant="secondary">Сохранить</SubmitButton>
+                      </div>
+                    </form>
+                  </details>
+                </li>
+              ))}
+            </ul>
+          )}
+          <details>
+            <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">Добавить конкурента</summary>
+            <form action={saveCompetitor} className="mt-3 grid gap-4 sm:grid-cols-2">
+              <input type="hidden" name="back" value={back} />
+              <Field label="Название">
+                <Input name="name" required maxLength={120} placeholder="Название компании-конкурента" />
+              </Field>
+              <Field label="Заметка">
+                <Input name="note" maxLength={300} placeholder="необязательно" />
+              </Field>
+              <Field label="Известные почты (по одной на строку или через запятую)" className="sm:col-span-2">
+                <Textarea name="emails" placeholder={'info@competitor.com\nteam@competitor.com'} />
+              </Field>
+              <div>
+                <SubmitButton>Добавить</SubmitButton>
+              </div>
+            </form>
+          </details>
+        </Card>
+
+        {everything.length > 0 && <RemovalStats rows={everything} admin />}
 
         <Card title="Журнал" description={`Показано ${rows.length} из ${everything.length}`}>
           <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -114,6 +187,15 @@ export default async function RemovalPage({ searchParams }: PageProps<'/admin/re
                 defaultValue={month ?? ''}
                 options={Object.fromEntries(removalMonths(scope).map((m) => [m, monthLabel(m)]))}
               />
+              {competitors.length > 0 && (
+                <AutoSubmitSelect
+                  name="competitor"
+                  label="Конкурент"
+                  placeholder="Все конкуренты"
+                  defaultValue={competitorId ?? ''}
+                  options={Object.fromEntries(competitors.map((c) => [c.id, c.name]))}
+                />
+              )}
               <input name="q" defaultValue={search} placeholder="Поиск по email или ссылке" className={inputClass('h-7 w-56 text-xs')} />
             </form>
             <form action={checkRemovalLinks} className="ml-auto">
@@ -124,7 +206,7 @@ export default async function RemovalPage({ searchParams }: PageProps<'/admin/re
               </SubmitButton>
             </form>
           </div>
-          <RemovalJournal rows={rows} back={back} />
+          <RemovalJournal rows={rows} back={back} competitors={competitors} />
         </Card>
       </PageBody>
     </>

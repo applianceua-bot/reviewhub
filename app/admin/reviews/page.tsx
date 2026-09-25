@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { brandPage, firstParam } from '@/lib/dash/page'
 import { listReviews } from '@/lib/data/lists'
-import { PLATFORMS, SENTIMENT_LABEL } from '@/lib/dash/constants'
+import { brandPlatforms } from '@/lib/data/brand-platforms'
+import { SENTIMENT_LABEL } from '@/lib/dash/constants'
 import { today } from '@/lib/dash/dates'
 import { BrandHeader, NoBrands } from '@/components/dash/brand-header'
 import { Card, PageBody } from '@/components/dash/ui'
@@ -26,6 +27,7 @@ export default async function AdminReviews({ searchParams }: PageProps<'/admin/r
   const onlySuspicious = firstParam(sp.filter) === 'suspicious'
   const listBack = onlySuspicious ? `${back}&filter=suspicious` : back
   const reviews = listReviews(brand.id, { suspicious: onlySuspicious })
+  const platforms = brandPlatforms(brand.id)
 
   const tab = (active: boolean, href: string, label: string) => (
     <Link
@@ -51,7 +53,7 @@ export default async function AdminReviews({ searchParams }: PageProps<'/admin/r
             <input type="hidden" name="back" value={listBack} />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               <Field label="Площадка">
-                <Select name="platform" required options={PLATFORMS.map((p) => ({ value: p.key, label: p.name }))} />
+                <Select name="platform" required options={platforms.map((p) => ({ value: p.key, label: p.name }))} />
               </Field>
               <Field label="Дата">
                 <Input type="date" name="published_at" required defaultValue={today()} />

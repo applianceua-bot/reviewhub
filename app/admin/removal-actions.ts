@@ -200,3 +200,59 @@ export async function deleteRemovalCheck(fd: FormData) {
   revalidate()
   redirect(backPath(fd))
 }
+
+// ── Competitors ──────────────────────────────────────────────────
+// A competitor's known emails auto-tag every past and future review from
+// that address (see the JOIN in lib/data/lists.ts); setCompetitor below is
+// only for the manual override on rows without a match, or a wrong one.
+
+function parseEmailList(raw: string) {
+  return [...new Set(raw.split(/[\n,;]/).map((e) => e.trim().toLowerCase()).filter(Boolean))]
+}
+
+export async function saveCompetitor(fd: FormData) {
+  await requireAdmin()
+  const back = backPath(fd)
+  const existingId = Number(fd.get('id')) || null
+  const name = String(fd.get('name') ?? '').trim().slice(0, 120)
+  const note = String(fd.get('note') ?? '').trim().slice(0, 300) || null
+  const emails = parseEmailList(String(fd.get('emails') ?? ''))
+  if (!name) redirect(withFlash(back, 'error', 'Укажите название конкурента.'))
+
+  try {
+    transaction(() => {
+      let id = existingId
+      if (id) {
+        run('UPDATE competitors SET name = ?, note = ? WHERE id = ?', name, note, id)
+        run('DELETE FROM competitor_emails WHERE competitor_id = ?', id)
+      } else {
+        id = run('INSERT INTO competitors (name, note) VALUES (?, ?)', name, note).id
+      }
+      for (const email of emails) run('INSERT OR IGNORE INTO competitor_emails (competitor_id, email) VALUES (?, ?)', id, email)
+    })
+  } catch (error) {
+    if (error instanceof Error && /UNIQUE constraint/.test(error.message)) {
+      redirect(withFlash(back, 'error', 'Такой конкурент или почта уже есть в списке.'))
+    }
+    throw error
+  }
+  revalidate()
+  redirect(withFlash(back, 'ok', existingId ? 'Конкурент обновлён.' : 'Конкурент добавлен.'))
+}
+
+export async function deleteCompetitor(fd: FormData) {
+  await requireAdmin()
+  run('DELETE FROM competitors WHERE id = ?', Number(fd.get('id')))
+  revalidate()
+  redirect(backPath(fd))
+}
+
+/** Manual override on one review; only needed without an email match, or to correct a wrong one. */
+export async function setCompetitor(fd: FormData) {
+  await requireAdmin()
+  const raw = String(fd.get('competitor_id') ?? '')
+  const value = raw ? Number(raw) : null
+  run('UPDATE removal_checks SET competitor_id = ? WHERE id = ?', value, Number(fd.get('id')))
+  revalidate()
+  redirect(backPath(fd))
+}

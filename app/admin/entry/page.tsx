@@ -1,8 +1,10 @@
+import Link from 'next/link'
 import { Trash2 } from 'lucide-react'
 import { brandPage, firstParam } from '@/lib/dash/page'
 import { listEntries } from '@/lib/data/lists'
+import { brandPlatforms } from '@/lib/data/brand-platforms'
 import { get } from '@/lib/db'
-import { PLATFORMS, platformName } from '@/lib/dash/constants'
+import { platformName } from '@/lib/dash/constants'
 import { formatLong, formatShort, isValidDateKey, weekStart, fromDateKey } from '@/lib/dash/dates'
 import { BrandHeader, NoBrands } from '@/components/dash/brand-header'
 import { Card, PageBody, Table } from '@/components/dash/ui'
@@ -41,6 +43,7 @@ export default async function EntryPage({ searchParams }: PageProps<'/admin/entr
       week,
     )
   const entries = listEntries(brand.id)
+  const platforms = brandPlatforms(brand.id)
 
   return (
     <>
@@ -62,44 +65,54 @@ export default async function EntryPage({ searchParams }: PageProps<'/admin/entr
             </form>
           }
         >
-          <form action={saveEntries} className="flex flex-col gap-4">
-            <input type="hidden" name="brand_id" value={brand.id} />
-            <input type="hidden" name="week_start" value={week} />
-            <input type="hidden" name="back" value={`${back}&week=${week}`} />
-            <Table>
-              <thead>
-                <tr>
-                  <th>Площадка</th>
-                  <th>Рейтинг</th>
-                  <th>Всего отзывов</th>
-                  <th>Прошлый снимок</th>
-                </tr>
-              </thead>
-              <tbody>
-                {PLATFORMS.map((p) => {
-                  const cur = current(p.key)
-                  const prev = previous(p.key)
-                  return (
-                    <tr key={p.key}>
-                      <td className="font-medium">{p.name}</td>
-                      <td>
-                        <Input name={`rating_${p.key}`} type="number" step="0.01" min={0} max={5} defaultValue={cur?.rating} placeholder={prev ? String(prev.rating) : '—'} className="h-8 w-24" aria-label={`${p.name}: рейтинг`} />
-                      </td>
-                      <td>
-                        <Input name={`count_${p.key}`} type="number" min={0} defaultValue={cur?.review_count} placeholder={prev ? String(prev.review_count) : '—'} className="h-8 w-32" aria-label={`${p.name}: всего отзывов`} />
-                      </td>
-                      <td className="text-xs text-muted-foreground">
-                        {prev ? `${prev.rating} · ${prev.review_count.toLocaleString('ru-RU')} отзывов · ${formatShort(prev.week_start)}` : 'нет данных'}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </Table>
-            <div>
-              <SubmitButton>Сохранить неделю</SubmitButton>
-            </div>
-          </form>
+          {platforms.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              У бренда пока не выбраны площадки — добавьте их на странице{' '}
+              <Link href="/admin/brands" className="text-primary hover:underline">
+                «Бренды»
+              </Link>
+              .
+            </p>
+          ) : (
+            <form action={saveEntries} className="flex flex-col gap-4">
+              <input type="hidden" name="brand_id" value={brand.id} />
+              <input type="hidden" name="week_start" value={week} />
+              <input type="hidden" name="back" value={`${back}&week=${week}`} />
+              <Table>
+                <thead>
+                  <tr>
+                    <th>Площадка</th>
+                    <th>Рейтинг</th>
+                    <th>Всего отзывов</th>
+                    <th>Прошлый снимок</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {platforms.map((p) => {
+                    const cur = current(p.key)
+                    const prev = previous(p.key)
+                    return (
+                      <tr key={p.key}>
+                        <td className="font-medium">{p.name}</td>
+                        <td>
+                          <Input name={`rating_${p.key}`} type="number" step="0.01" min={0} max={5} defaultValue={cur?.rating} placeholder={prev ? String(prev.rating) : '—'} className="h-8 w-24" aria-label={`${p.name}: рейтинг`} />
+                        </td>
+                        <td>
+                          <Input name={`count_${p.key}`} type="number" min={0} defaultValue={cur?.review_count} placeholder={prev ? String(prev.review_count) : '—'} className="h-8 w-32" aria-label={`${p.name}: всего отзывов`} />
+                        </td>
+                        <td className="text-xs text-muted-foreground">
+                          {prev ? `${prev.rating} · ${prev.review_count.toLocaleString('ru-RU')} отзывов · ${formatShort(prev.week_start)}` : 'нет данных'}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </Table>
+              <div>
+                <SubmitButton>Сохранить неделю</SubmitButton>
+              </div>
+            </form>
+          )}
         </Card>
 
         <Card title="Последние записи">

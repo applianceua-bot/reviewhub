@@ -1,4 +1,5 @@
 /** Dependency-free charts: SVG line/donut scaled from a viewBox, HTML bars. */
+import { revealDelay } from '@/lib/utils'
 
 type AreaPoint = { label: string; value: number | null }
 
@@ -36,45 +37,57 @@ export function AreaChart({
   const labelEvery = Math.ceil(points.length / 6)
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label="График">
-      <defs>
-        <linearGradient id="dash-area" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="var(--chart-1)" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="var(--chart-1)" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      {ticks.map((t) => (
-        <g key={t}>
-          <line x1={PAD.left} x2={W - PAD.right} y1={y(t)} y2={y(t)} stroke="var(--border)" />
-          <text x={PAD.left - 8} y={y(t) + 4} textAnchor="end" fontSize="11" fill="var(--muted-foreground)">
-            {format(t)}
-          </text>
-        </g>
-      ))}
-      {target !== undefined && target >= lo && target <= hi && (
-        <g>
-          <line x1={PAD.left} x2={W - PAD.right} y1={y(target)} y2={y(target)} stroke="var(--warning)" strokeDasharray="4 4" opacity="0.7" />
-          <text x={W - PAD.right} y={y(target) - 5} textAnchor="end" fontSize="11" fill="var(--warning)">
-            цель {format(target)}
-          </text>
-        </g>
-      )}
-      <path d={area} fill="url(#dash-area)" />
-      <path d={line} fill="none" stroke="var(--chart-1)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-      {defined.map((p) => (
-        <circle key={p.i} cx={x(p.i)} cy={y(p.value)} r="3" fill="var(--card)" stroke="var(--chart-1)" strokeWidth="1.5">
-          <title>{`${p.label}: ${format(p.value)}`}</title>
-        </circle>
-      ))}
-      {points.map((p, i) =>
-        // Skip a regular label that would collide with the last one.
-        (i % labelEvery === 0 && points.length - 1 - i >= labelEvery / 2) || i === points.length - 1 ? (
-          <text key={i} x={x(i)} y={H - 6} textAnchor={i === points.length - 1 ? 'end' : i === 0 ? 'start' : 'middle'} fontSize="11" fill="var(--muted-foreground)">
-            {p.label}
-          </text>
-        ) : null,
-      )}
-    </svg>
+    <div data-reveal>
+      <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label="График">
+        <defs>
+          <linearGradient id="dash-area" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="var(--chart-1)" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="var(--chart-1)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {ticks.map((t) => (
+          <g key={t}>
+            <line x1={PAD.left} x2={W - PAD.right} y1={y(t)} y2={y(t)} stroke="var(--border)" />
+            <text x={PAD.left - 8} y={y(t) + 4} textAnchor="end" fontSize="11" fill="var(--muted-foreground)">
+              {format(t)}
+            </text>
+          </g>
+        ))}
+        {target !== undefined && target >= lo && target <= hi && (
+          <g>
+            <line x1={PAD.left} x2={W - PAD.right} y1={y(target)} y2={y(target)} stroke="var(--warning)" strokeDasharray="4 4" opacity="0.7" />
+            <text x={W - PAD.right} y={y(target) - 5} textAnchor="end" fontSize="11" fill="var(--warning)">
+              цель {format(target)}
+            </text>
+          </g>
+        )}
+        <path className="dash-area" d={area} fill="url(#dash-area)" />
+        <path className="dash-line" d={line} fill="none" stroke="var(--chart-1)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" pathLength={1} />
+        {defined.map((p, k) => (
+          <circle
+            key={p.i}
+            className="dash-dot"
+            cx={x(p.i)}
+            cy={y(p.value)}
+            r="3"
+            fill="var(--card)"
+            stroke="var(--chart-1)"
+            strokeWidth="1.5"
+            style={{ ['--dot-delay' as string]: `${1.1 + k * 0.05}s` }}
+          >
+            <title>{`${p.label}: ${format(p.value)}`}</title>
+          </circle>
+        ))}
+        {points.map((p, i) =>
+          // Skip a regular label that would collide with the last one.
+          (i % labelEvery === 0 && points.length - 1 - i >= labelEvery / 2) || i === points.length - 1 ? (
+            <text key={i} x={x(i)} y={H - 6} textAnchor={i === points.length - 1 ? 'end' : i === 0 ? 'start' : 'middle'} fontSize="11" fill="var(--muted-foreground)">
+              {p.label}
+            </text>
+          ) : null,
+        )}
+      </svg>
+    </div>
   )
 }
 
@@ -90,13 +103,13 @@ export function BarChart({
   const max = Math.max(...points.map((p) => p.value), 1)
   const labelEvery = Math.ceil(points.length / 6)
   return (
-    <div>
+    <div data-reveal>
       <div className="flex items-end gap-1.5 sm:gap-3" style={{ height }}>
         {points.map((p, i) => (
           <div key={i} className="group relative flex h-full flex-1 items-end justify-center">
             <div
-              className="w-full max-w-7 rounded-t-[3px] opacity-85 transition-opacity group-hover:opacity-100"
-              style={{ height: `${Math.max((p.value / max) * 100, 1)}%`, background: color }}
+              className="dash-bar-fill w-full max-w-7 rounded-t-[3px] opacity-85 group-hover:opacity-100"
+              style={{ height: `${Math.max((p.value / max) * 100, 1)}%`, background: color, ...revealDelay(i, 25) }}
               title={`${p.label}: ${p.value}`}
             />
           </div>
@@ -127,8 +140,8 @@ export function Donut({
   const C = 2 * Math.PI * R
   let offset = 0
   return (
-    <div className="flex items-center gap-4">
-      <svg viewBox="0 0 100 100" className="size-24 shrink-0 -rotate-90 sm:size-28">
+    <div data-reveal className="flex items-center gap-4">
+      <svg viewBox="0 0 100 100" className="dash-donut size-24 shrink-0 -rotate-90 sm:size-28">
         <circle cx="50" cy="50" r={R} fill="none" stroke="var(--muted)" strokeWidth="10" />
         {total > 0 &&
           segments.map((s) => {
